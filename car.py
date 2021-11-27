@@ -9,34 +9,56 @@ host = "192.168.245.23"
 port = 8887
 deadband = np.pi/10
 lower_bound = 0.4
-max_throttle = 0.18
+max_throttle = 0.2
 trim = -0.4
 
 socket_address = f"ws://{host}:{port}/wsDrive"
 video_address = f"http://{host}:{port}/video"
 
-def middle_alg(frame):
+def middle_alg(frame, left_lost, right_lost):
     fov = 90
     lines = get_hough_lines(frame, fov, True)
     left_x = 0
     right_x = 160
+    left_set = False
+    right_set = False
     middle = 160/2
     for line in lines:
         for x1,y1,x2,y2 in line:
             if x1 < middle and x1>left_x:
                 left_x = x1
+                left_set = True
             elif x1 > middle and x1<right_x:
                 right_x = x1
+                right_set = True
             if x2 < middle and x2>left_x:
                 left_x = x2
+                left_set = True
             elif x2 > middle and x2<right_x:
                 right_x = 2
+                right_set = True
+
+    
+    if not left_set and not right_set:
+        angle = trim
+        throttle = -max_throttle
+    elif not left_set or left_lost: # If left line lost
+        angle = -1
+        left_lost = True
+    elif not right_set or right_lost:
+        angle = 1
+        right_lost = True
+    else: # both found
+        right_lost = False
+        left_lost = False
+        pass
+
     mid_dev = middle - ((right_x - left_x)/2+left_x)
     angle = (-mid_dev/20) + trim
     print('mid dev',angle-trim)
     #print('angle',angle)
     throttle = max_throttle
-    return [angle,throttle]
+    return [angle, throttle, left_lost, right_lost]
 
 
 
@@ -128,13 +150,15 @@ def on_open(ws):
     ret, frame = cap.read()
     height = frame.shape[0]
     width = frame.shape[1]
+    left_lost = False
+    right_lost = False
 
     while True:
         try:
             ret, frame = cap.read()
             if ret:
                 #angle, throttle = vector_alg(frame)
-                angle, throttle = middle_alg(frame)
+                angle, throttle, left_lost, right_lost = middle_alg(frame, left_lost, right_lost)
                 #origin = np.array([[0]*len(vectors),[0]*len(vectors)]) # origin point
                 #print('Theta:',np.rad2deg(theta))
                 #print('Angle val:',angle)
