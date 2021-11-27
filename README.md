@@ -49,3 +49,9 @@ Likewise, the `throttle` goes from `-1.0`, for full reverse, and `1.0`, for full
 forward.
 
 Don't mind, or change, the other properties.
+
+
+ssh pi@192.168.245.23
+Donkeycar2021
+
+rsync -rv --progress --partial pi@192.168.245.23:~/mycar/data/  ~/mycar/data/
