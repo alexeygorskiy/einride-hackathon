@@ -3,6 +3,7 @@ import _thread
 import time
 import cv2
 import numpy as np
+import sys
 
 host = "192.168.245.23"
 port = 8887
@@ -16,7 +17,11 @@ def on_message(ws, message):
 
 def on_error(ws, error):
     print(error)
-
+    angle = 0.0
+    throttle = 0.0
+    message = f"{{\"angle\":{angle},\"throttle\":{throttle},\"drive_mode\":\"user\",\"recording\":false}}"
+    ws.send(message)
+    sys.exit()
 
 def on_close(ws, close_status_code, close_msg):
     print("### closed ###")
