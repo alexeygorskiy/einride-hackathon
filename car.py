@@ -1,6 +1,4 @@
 import websocket
-import _thread
-import time
 import cv2
 import numpy as np
 import sys
@@ -28,27 +26,23 @@ def on_close(ws, close_status_code, close_msg):
 
 
 def on_open(ws):
-    def run(*args):
+    cap = cv2.VideoCapture(video_address)
 
-        # your car logic here
+    ret, frame = cap.read()
+    height = frame.shape[0]
+    width = frame.shape[1]
 
-        cap = cv2.VideoCapture(video_address)
-
-        ret, frame = cap.read()
-        height = frame.shape[0]
-        width = frame.shape[1]
-
-        while True:
+    while True:
+        try:
             ret, frame = cap.read()
-            # do something based on the frame
             angle = 0
-            throttle = 0
+            throttle = 0.5
 
             message = f"{{\"angle\":{angle},\"throttle\":{throttle},\"drive_mode\":\"user\",\"recording\":false}}"
             ws.send(message)
             print(message)
-
-    _thread.start_new_thread(run, ())
+        except Exception as error:
+            on_error(ws, error)
 
 
 if __name__ == "__main__":
