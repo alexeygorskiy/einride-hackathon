@@ -2,8 +2,9 @@ import websocket
 import _thread
 import time
 import cv2
+import numpy as np
 
-host = "donkeycar"
+host = "192.168.245.23"
 port = 8887
 
 socket_address = f"ws://{host}:{port}/wsDrive"
@@ -23,6 +24,7 @@ def on_close(ws, close_status_code, close_msg):
 
 def on_open(ws):
     def run(*args):
+
         # your car logic here
 
         cap = cv2.VideoCapture(video_address)
@@ -34,8 +36,8 @@ def on_open(ws):
         while True:
             ret, frame = cap.read()
             # do something based on the frame
-            angle = 0.0
-            throttle = 0.2
+            angle = 0
+            throttle = 0
 
             message = f"{{\"angle\":{angle},\"throttle\":{throttle},\"drive_mode\":\"user\",\"recording\":false}}"
             ws.send(message)
