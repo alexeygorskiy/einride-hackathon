@@ -15,7 +15,7 @@ trim = -0.4
 socket_address = f"ws://{host}:{port}/wsDrive"
 video_address = f"http://{host}:{port}/video"
 
-def middle_alg(frame, left_lost, right_lost):
+def middle_alg(frame):
     fov = 90
     lines = get_hough_lines(frame, fov, True)
     left_x = 0
@@ -38,106 +38,21 @@ def middle_alg(frame, left_lost, right_lost):
                 right_x = 2
                 right_set = True
 
-    wrong_stuff = False
-    if not left_lost and not right_lost:
-        if left_set and not right_set:
-            # 11 -> 10: turn right
-            angle = 1
-            throttle = max_throttle
-        elif not left_set and right_set:
-            # 11 -> 01: turn left
-            angle = -1
-            throttle = max_throttle
-        elif left_set and right_set:
-            # 11 -> 11: keep going forward
-            mid_dev = middle - ((right_x - left_x)/2+left_x)
-            angle = (-mid_dev/20) + trim
-            print('mid dev',angle-trim)
-            #print('angle',angle)
-            throttle = max_throttle
-        elif not left_set and not right_set:
-            # 11 -> 00: reverse
-            # TODO: maybe also turn
-            angle = trim
-            throttle = -max_throttle
-        
-    if left_lost and not right_lost:
-        if left_set and not right_set:
-            # 10 -> 10: turn right
-            angle = 1
-            throttle = max_throttle
-        elif not left_set and right_set:
-            # 10 -> 01: turn right
-            angle = 1
-            wrong_stuff = True
-            left_set = True
-            right_set = False
-            throttle = max_throttle
-        elif left_set and right_set:
-            # 10 -> 11: keep going forward
-            mid_dev = middle - ((right_x - left_x)/2+left_x)
-            angle = (-mid_dev/20) + trim
-            print('mid dev',angle-trim)
-            #print('angle',angle)
-            throttle = max_throttle
-        elif not left_set and not right_set:
-            # 10 -> 00: reverse
-            # TODO: maybe also turn
-            angle = trim
-            throttle = -max_throttle
+    
+    if not left_set and not right_set:
+        angle = trim
+        throttle = -max_throttle
+    elif not left_set: # If left line lost
+        angle = -1
+    elif not right_set :
+        angle = 1
 
-    if not left_lost and right_lost:
-        if left_set and not right_set:
-            # 01 -> 10: turn right
-            angle = -1
-            wrong_stuff = True
-            left_set = False
-            right_set = True
-            throttle = max_throttle
-        elif not left_set and right_set:
-            # 01 -> 01: turn left
-            angle = -1
-            throttle = max_throttle
-        elif left_set and right_set:
-            # 01 -> 11: keep going forward
-            mid_dev = middle - ((right_x - left_x)/2+left_x)
-            angle = (-mid_dev/20) + trim
-            print('mid dev',angle-trim)
-            #print('angle',angle)
-            throttle = max_throttle
-        elif not left_set and not right_set:
-            # 01 -> 00: reverse
-            # TODO: maybe also turn
-            angle = trim
-            throttle = -max_throttle
-
-    if not left_lost and not right_lost:
-        if left_set and not right_set:
-            # 00 -> 10: turn right
-            angle = 1
-            throttle = max_throttle
-        elif not left_set and right_set:
-            # 00 -> 01: turn left
-            angle = -1
-            throttle = max_throttle
-        elif left_set and right_set:
-            # 00 -> 11: keep going forward
-            mid_dev = middle - ((right_x - left_x)/2+left_x)
-            angle = (-mid_dev/20) + trim
-            print('mid dev',angle-trim)
-            #print('angle',angle)
-            throttle = max_throttle
-        elif not left_set and not right_set:
-            # 00 -> 00: reverse
-            # TODO: maybe also turn
-            angle = trim
-            throttle = -max_throttle
-
-    if not wrong_stuff:
-        left_lost = left_set
-        right_lost = right_set
-
-    return [angle, throttle, left_lost, right_lost]
+    mid_dev = middle - ((right_x - left_x)/2+left_x)
+    angle = (-mid_dev/20) + trim
+    print('mid dev',angle-trim)
+    #print('angle',angle)
+    throttle = max_throttle
+    return [angle, throttle]
 
 
 
@@ -229,15 +144,13 @@ def on_open(ws):
     ret, frame = cap.read()
     height = frame.shape[0]
     width = frame.shape[1]
-    left_lost = False
-    right_lost = False
 
     while True:
         try:
             ret, frame = cap.read()
             if ret:
                 #angle, throttle = vector_alg(frame)
-                angle, throttle, left_lost, right_lost = middle_alg(frame, left_lost, right_lost)
+                angle, throttle = middle_alg(frame)
                 #origin = np.array([[0]*len(vectors),[0]*len(vectors)]) # origin point
                 #print('Theta:',np.rad2deg(theta))
                 #print('Angle val:',angle)
